@@ -1,0 +1,63 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Source Serif 4', ui-serif, Georgia, serif;
+
+  /* Government green — primary brand */
+  --color-brand-50: #eef6f2;
+  --color-brand-100: #d9ece3;
+  --color-brand-200: #b3d8c7;
+  --color-brand-300: #7fbba2;
+  --color-brand-500: #2f7d62;
+  --color-brand-600: #1f6b52;
+  --color-brand-700: #155e4a;
+  --color-brand-800: #10483a;
+  --color-brand-900: #0b342a;
+
+  /* Surfaces */
+  --color-canvas: #f1f7f4;
+  --color-surface: #ffffff;
+  --color-line: #e2ebe6;
+  --color-ink: #1b2a24;
+  --color-muted: #5d6f67;
+
+  /* Category colours: fixed order, validated for CVD separation and 3:1 contrast
+     (dataviz validate_palette.js, light mode). Colour follows the category everywhere. */
+  --color-cat-clothes: #16875a;
+  --color-cat-blankets: #2a78d6;
+  --color-cat-stationery: #d4622a;
+  --color-cat-books: #b03d74;
+  --color-cat-other: #9a7b0a;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-600;
+  }
+}
+
+@keyframes drawer-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog {
+    animation: none !important;
+  }
+}
