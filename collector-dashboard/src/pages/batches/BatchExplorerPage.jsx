@@ -182,6 +182,7 @@ export function BatchExplorerPage() {
               sort={sort}
               onSort={(s) => update({ sort: s.column, dir: s.ascending ? 'asc' : null })}
               onOpen={panel.open}
+              hide={['items']}
             />
             <Pagination
               page={page}

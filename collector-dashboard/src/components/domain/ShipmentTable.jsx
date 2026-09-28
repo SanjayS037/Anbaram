@@ -34,7 +34,7 @@ export function ShipmentTable({ rows, sort, onSort, onOpen, hide = [] }) {
           <SortableTh column="total_kg" sort={sort} onSort={onSort} className="text-right">
             Weight
           </SortableTh>
-          <Th>Items</Th>
+          {!hide.includes('items') && <Th>Items</Th>}
           <SortableTh column="dispatched_at" sort={sort} onSort={onSort}>
             Sent
           </SortableTh>
@@ -64,9 +64,11 @@ export function ShipmentTable({ rows, sort, onSort, onOpen, hide = [] }) {
             <td className="px-4 py-3 text-right font-semibold whitespace-nowrap tabular-nums">
               {formatKg(s.total_kg)}
             </td>
-            <td className="px-4 py-3">
-              <CategoryMix row={s} />
-            </td>
+            {!hide.includes('items') && (
+              <td className="px-4 py-3">
+                <CategoryMix row={s} />
+              </td>
+            )}
             <td className="px-4 py-3 whitespace-nowrap text-muted">{formatDate(s.dispatched_at)}</td>
             <td className="px-4 py-3 whitespace-nowrap text-muted">{formatDate(s.received_at)}</td>
             <td className="px-4 py-3">
