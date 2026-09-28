@@ -169,24 +169,22 @@ export async function fetchNavCounts() {
   return { openFlags: unwrapCount(openFlags), pendingOfficers: unwrapCount(pendingOfficers), stockAlerts }
 }
 
-/** Out-of-stock (center, category) pairs at active centers that no open collection request covers yet. */
+/** Active centers that are out of stock and have no open collection request yet (one request per center). */
 async function countUncoveredStockAlerts() {
   const [alerts, open] = await Promise.all([
     supabase
       .from('inventory_status')
       .select(
-        'category, distribution_center_id, distribution_center:distribution_centers!inventory_status_distribution_center_id_fkey(status)',
+        'distribution_center_id, distribution_center:distribution_centers!inventory_status_distribution_center_id_fkey(status)',
       )
       .eq('is_out_of_stock', true),
-    supabase
-      .from('collection_requests')
-      .select('distribution_center_id, requested_categories')
-      .in('status', ['pending', 'in_progress']),
+    supabase.from('collection_requests').select('distribution_center_id').in('status', ['pending', 'in_progress']),
   ])
-  const covered = new Set(
-    unwrap(open).flatMap((r) => (r.requested_categories ?? []).map((c) => `${r.distribution_center_id}:${c}`)),
+  const covered = new Set(unwrap(open).map((r) => r.distribution_center_id))
+  const waiting = new Set(
+    unwrap(alerts)
+      .filter((a) => a.distribution_center?.status === 'active' && !covered.has(a.distribution_center_id))
+      .map((a) => a.distribution_center_id),
   )
-  return unwrap(alerts).filter(
-    (a) => a.distribution_center?.status === 'active' && !covered.has(`${a.distribution_center_id}:${a.category}`),
-  ).length
+  return waiting.size
 }

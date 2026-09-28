@@ -112,7 +112,7 @@ export function CollectionPointsPage() {
           <EmptyState title="No collection points found. Try a different search." />
         ) : (
           <>
-            <TableShell minWidth={1060}>
+            <TableShell minWidth={900}>
               <thead className={theadClass}>
                 <tr>
                   <SortableTh column="name" sort={table.sort} onSort={table.setSort}>
@@ -122,7 +122,6 @@ export function CollectionPointsPage() {
                     Taluk
                   </SortableTh>
                   <Th>Officer</Th>
-                  <Th>Usually sends to</Th>
                   <SortableTh column="last_collected_at" sort={table.sort} onSort={table.setSort}>
                     Last collected
                   </SortableTh>
@@ -156,7 +155,6 @@ export function CollectionPointsPage() {
                     <td className="px-4 py-3">
                       <OfficerContactCell officer={p.officer} />
                     </td>
-                    <td className="px-4 py-3 text-muted">{p.default_dc?.name ?? '—'}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-muted">{formatDate(p.last_collected_at)}</td>
                     <td className="px-4 py-3">
                       {p.status !== 'active' ? (

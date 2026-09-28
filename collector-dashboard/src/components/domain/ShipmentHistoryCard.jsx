@@ -69,7 +69,7 @@ export function ShipmentHistoryCard({ type, locationId }) {
               setSort(s)
               setPage(1)
             }}
-            hide={[type]}
+            hide={[type, 'items']}
             onOpen={setOpenBatch}
           />
           <Pagination page={page} pageSize={PAGE_SIZE} total={list.data.total} onPageChange={setPage} />

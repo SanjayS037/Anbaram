@@ -1,12 +1,35 @@
 import { supabase } from '../lib/supabase'
 import { unwrap, unwrapCount } from '../lib/db'
+import { CATEGORIES } from '../utils/categories'
 export const OPEN_STATUSES = ['pending', 'in_progress']
 
 // ---------------------------------------------------------------------------
-// Incoming requests — a Distribution Center officer marks an item finished in
-// their app (inventory_status.is_out_of_stock = true). Each such row is one
-// request waiting for the Collector Office to assign a collection point.
+// Incoming requests — a Distribution Center officer says their center is out
+// of stock from their app (any inventory_status row with is_out_of_stock =
+// true). The request is per CENTER, not per item: one center = one request,
+// and the collection point assigned to it collects every item.
 // ---------------------------------------------------------------------------
+
+/** Every item key — a center request always asks for all of them. */
+export const ALL_CATEGORY_KEYS = CATEGORIES.map((c) => c.key)
+
+/**
+ * Turn out-of-stock rows into one request per active center, newest first.
+ * A center is left out when an open collection request already covers it.
+ */
+export function groupCenterRequests(alerts, openRequests) {
+  const covered = new Set((openRequests ?? []).map((r) => r.distribution_center_id))
+  const byCenter = new Map()
+  for (const a of alerts ?? []) {
+    const center = a.distribution_center
+    if (!center || center.status !== 'active' || covered.has(center.id)) continue
+    const current = byCenter.get(center.id)
+    // Keep the most recent update so "sent by" / time show the latest officer action.
+    if (!current || a.updated_at > current.updated_at)
+      byCenter.set(center.id, { id: center.id, center, requested_by: a.requested_by, updated_at: a.updated_at })
+  }
+  return [...byCenter.values()].sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+}
 
 export async function listStockAlerts() {
   return unwrap(
@@ -18,7 +41,7 @@ export async function listStockAlerts() {
          requested_by:officers!inventory_status_updated_by_officer_id_fkey(full_name, phone)`,
       )
       .eq('is_out_of_stock', true)
-      .order('updated_at', { ascending: true }),
+      .order('updated_at', { ascending: false }), // newest request on top
   )
 }
 

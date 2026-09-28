@@ -18,7 +18,7 @@ import {
   useRequestList,
   useStockAlerts,
 } from '../../hooks/useRequests'
-import { CATEGORIES, categoryLabel } from '../../utils/categories'
+import { ALL_CATEGORY_KEYS, groupCenterRequests } from '../../services/requests'
 import { cn } from '../../utils/cn'
 import { formatDate, formatKg, formatRelative } from '../../utils/format'
 import { BatchPanel } from '../batches/BatchPanel'
@@ -29,10 +29,12 @@ const PAGE_SIZE = 10
 
 /**
  * Requests page.
- * 1. A Distribution Center officer marks an item as finished in their app
- *    (inventory_status.is_out_of_stock = true) — that is the request.
+ * 1. A Distribution Center officer says their center is out of stock in their
+ *    app (inventory_status.is_out_of_stock = true) — that is the request. It is
+ *    one request per center, never per item.
  * 2. The Collector Office assigns a collection point to it (inserts a
- *    collection_requests row). Nothing is assigned automatically.
+ *    collection_requests row asking for every item). Nothing is assigned
+ *    automatically.
  * 3. The collection point's officer collects and dispatches; the assignment
  *    completes automatically when the shipment is sent.
  */
@@ -68,36 +70,20 @@ export function CollectionRequestsPage() {
   )
 }
 
-/** Number of out-of-stock items nobody has been assigned to yet. */
+/** Number of out-of-stock centers nobody has been assigned to yet. */
 function useWaitingCount() {
   const alerts = useStockAlerts()
   const open = useOpenRequestSummaries()
-  return (alerts.data ?? []).filter(
-    (a) =>
-      a.distribution_center?.status === 'active' &&
-      !open.data?.some(
-        (r) =>
-          r.distribution_center_id === a.distribution_center?.id && (r.requested_categories ?? []).includes(a.category),
-      ),
-  ).length
+  return groupCenterRequests(alerts.data, open.data).length
 }
 
 function RequestsTab({ alerts }) {
   const openAssignments = useOpenRequestSummaries()
   const points = useCollectionPoints()
 
-  // A request is "new" until an open assignment covers that center + item.
+  // A center's request is "new" until an open assignment covers that center.
   const newRequests = useMemo(
-    () =>
-      (alerts.data ?? []).filter(
-        (a) =>
-          a.distribution_center?.status === 'active' &&
-          !openAssignments.data?.some(
-            (r) =>
-              r.distribution_center_id === a.distribution_center?.id &&
-              (r.requested_categories ?? []).includes(a.category),
-          ),
-      ),
+    () => groupCenterRequests(alerts.data, openAssignments.data),
     [alerts.data, openAssignments.data],
   )
 
@@ -115,8 +101,8 @@ function RequestsTab({ alerts }) {
             )}
           </h2>
           <p className="text-sm text-muted">
-            A distribution center officer sends a request from their app when an item is finished. Choose a collection
-            point to send it.
+            A distribution center officer sends a request from their app when the center is out of stock. Choose a
+            collection point to fill it with all items.
           </p>
         </div>
 
@@ -138,7 +124,7 @@ function RequestsTab({ alerts }) {
             <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
               <Inbox className="size-7 text-brand-300" aria-hidden />
               <p className="font-semibold">No new requests</p>
-              <p className="text-sm text-muted">When a distribution center has finished an item, it will show here.</p>
+              <p className="text-sm text-muted">When a distribution center is out of stock, it will show here.</p>
             </div>
           </Card>
         ) : (
@@ -152,7 +138,7 @@ function RequestsTab({ alerts }) {
 }
 
 // ---------------------------------------------------------------------------
-// One incoming request: what ran out, where, who sent it — and Assign
+// One incoming request: which center is out of stock, who sent it — and Assign
 // ---------------------------------------------------------------------------
 
 function NewRequestCard({ request, points }) {
@@ -161,8 +147,7 @@ function NewRequestCard({ request, points }) {
   const id = useId()
   const [pointId, setPointId] = useState('')
   const [message, setMessage] = useState('')
-  const center = request.distribution_center
-  const color = CATEGORIES.find((c) => c.key === request.category)?.color
+  const center = request.center
 
   // No map coordinates exist in the schema, so the "nearest" suggestion is the
   // points that normally send to this center; all others follow.
@@ -178,7 +163,7 @@ function NewRequestCard({ request, points }) {
       collectionPointId: chosen.id,
       distributionCenterId: center.id,
       adminId: admin.id,
-      categories: [request.category],
+      categories: ALL_CATEGORY_KEYS,
       note: message.trim() || null,
       pointName: chosen.name,
     })
@@ -187,13 +172,12 @@ function NewRequestCard({ request, points }) {
   return (
     <Card className="overflow-hidden">
       <div className="flex">
-        <div className="w-1.5 shrink-0" style={{ background: color }} aria-hidden />
+        <div className="w-1.5 shrink-0 bg-red-700" aria-hidden />
         <div className="flex-1 space-y-4 p-5">
           <div>
             <p className="text-base">
-              <strong className="text-lg">{categoryLabel(request.category)}</strong>
-              <span className="text-muted"> is finished at </span>
-              <span className="font-semibold text-brand-900">{center.name}</span>
+              <strong className="text-lg text-brand-900">{center.name}</strong>
+              <span className="text-muted"> is out of stock</span>
             </p>
             <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-muted">
               {request.requested_by ? (
@@ -253,8 +237,8 @@ function NewRequestCard({ request, points }) {
           </div>
           {chosen && (
             <p className="-mt-2 text-xs text-muted">
-              <strong className="text-ink">{chosen.officer?.full_name}</strong> from {chosen.name} will collect{' '}
-              {categoryLabel(request.category).toLowerCase()} and take them to {center.name}.
+              <strong className="text-ink">{chosen.officer?.full_name}</strong> from {chosen.name} will collect all
+              items and take them to {center.name}.
             </p>
           )}
         </div>
@@ -324,7 +308,7 @@ function AssignedRequests() {
                   </div>
                   <div className="min-w-0 flex-1 space-y-1 text-sm">
                     <p className="flex flex-wrap items-center gap-1.5">
-                      <strong>{(r.requested_categories ?? []).map(categoryLabel).join(', ')}</strong>
+                      <strong>Stock</strong>
                       <span className="text-muted">from</span>
                       <span className="font-medium">{r.collection_point?.name ?? '—'}</span>
                       <ArrowRight className="size-3.5 text-muted" aria-hidden />
@@ -394,8 +378,8 @@ function AssignedRequests() {
           }
         >
           {cancelling.collection_point?.officer?.full_name ?? 'The officer'} will no longer be asked to take items to{' '}
-          <strong className="text-ink">{cancelling.distribution_center?.name}</strong>. If the item is still finished
-          there, the request goes back to <strong className="text-ink">New requests</strong> so you can choose another
+          <strong className="text-ink">{cancelling.distribution_center?.name}</strong>. If the center is still out of
+          stock, the request goes back to <strong className="text-ink">New requests</strong> so you can choose another
           collection point.
           {cancelling.status === 'in_progress' && ' They have already started, so please call them.'}
         </ConfirmDialog>

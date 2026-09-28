@@ -45,6 +45,43 @@ export const Select = forwardRef(function Select({ className, children, ...rest 
   )
 })
 
+/** Two dates (from / to) inside one box. Values are 'YYYY-MM-DD' strings or ''. */
+export function DateRangeInput({ from, to, onFromChange, onToChange, label = 'Dates', invalid, className }) {
+  const inner = 'h-full min-w-0 flex-1 bg-transparent text-sm text-ink focus:outline-none'
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      className={cn(
+        control,
+        'flex h-10 items-center gap-1.5 focus-within:border-brand-500',
+        invalid && 'border-red-500',
+        className,
+      )}
+    >
+      <input
+        type="date"
+        aria-label={`${label}: from`}
+        title="From"
+        value={from}
+        max={to || undefined}
+        onChange={(e) => onFromChange(e.target.value)}
+        className={inner}
+      />
+      <span className="shrink-0 text-xs text-muted">to</span>
+      <input
+        type="date"
+        aria-label={`${label}: to`}
+        title="To"
+        value={to}
+        min={from || undefined}
+        onChange={(e) => onToChange(e.target.value)}
+        className={inner}
+      />
+    </div>
+  )
+}
+
 export function SearchInput({ value, onChange, placeholder = 'Search…', label = 'Search', className }) {
   return (
     <div className={cn('relative', className)}>

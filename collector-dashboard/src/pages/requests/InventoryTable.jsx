@@ -5,14 +5,14 @@ import { EmptyState, ErrorState, Skeleton } from '../../components/ui/States'
 import { TableShell, Th, theadClass } from '../../components/ui/Table'
 import { useDistributionCenters } from '../../hooks/useLocations'
 import { useInventory, useOpenRequestSummaries } from '../../hooks/useRequests'
-import { CATEGORIES } from '../../utils/categories'
 import { cn } from '../../utils/cn'
 import { formatRelative } from '../../utils/format'
 
 /**
- * Inventory tab: the inventory_status table as a grid — one row per active
- * distribution center, one column per item. Read-only here; each center's
- * officer updates it from their app, and every "Out" becomes a request.
+ * Stock tab: one row per active distribution center with a single stock state.
+ * A center is out of stock when its officer has marked anything out in the app
+ * (any inventory_status row with is_out_of_stock). Read-only here; each out of
+ * stock center becomes one request on the Requests tab.
  */
 export function InventoryTable({ onGoToRequests }) {
   const inventory = useInventory()
@@ -33,21 +33,19 @@ export function InventoryTable({ onGoToRequests }) {
       .filter((c) => c.status === 'active')
       .filter((c) => !term || [c.name, c.short_code].some((v) => v?.toLowerCase().includes(term)))
       .map((c) => {
-        const items = byCenter.get(c.id) ?? new Map()
-        const latest = [...items.values()].sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0]
-        const outCount = [...items.values()].filter((i) => i.is_out_of_stock).length
-        return { center: c, items, latest, outCount }
+        const items = [...(byCenter.get(c.id) ?? new Map()).values()]
+        const latest = items.sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0]
+        const isOut = items.some((i) => i.is_out_of_stock)
+        return { center: c, latest, isOut, hasUpdate: items.length > 0 }
       })
-      .filter((r) => !onlyOut || r.outCount > 0)
-      .sort((a, b) => b.outCount - a.outCount || a.center.name.localeCompare(b.center.name))
+      .filter((r) => !onlyOut || r.isOut)
+      .sort((a, b) => Number(b.isOut) - Number(a.isOut) || a.center.name.localeCompare(b.center.name))
   }, [inventory.data, centers.data, search, onlyOut])
 
-  // Which collection point is handling a given center + item, if any.
-  const assignedTo = (centerId, category) =>
-    open.data?.find((r) => r.distribution_center_id === centerId && (r.requested_categories ?? []).includes(category))
-      ?.collection_point?.name
+  // Which collection point is filling a given center, if any.
+  const assignedTo = (centerId) => open.data?.find((r) => r.distribution_center_id === centerId)?.collection_point?.name
 
-  const totalOut = (inventory.data ?? []).filter((r) => r.is_out_of_stock).length
+  const totalOut = rows.filter((r) => r.isOut).length
   const loading = inventory.isPending || centers.isPending
   const error = inventory.error ?? centers.error
 
@@ -57,7 +55,7 @@ export function InventoryTable({ onGoToRequests }) {
         <div className="flex-1">
           <p className="font-semibold">Stock at each distribution center</p>
           <p className="text-sm text-muted">
-            Each center's officer updates this in their app. Anything marked Finished becomes a request.
+            Each center's officer updates this in their app. A center marked Out of stock becomes a request.
           </p>
         </div>
         <SearchInput
@@ -74,7 +72,7 @@ export function InventoryTable({ onGoToRequests }) {
             onChange={(e) => setOnlyOut(e.target.checked)}
             className="size-4 accent-brand-700"
           />
-          Only centers with finished items
+          Only out of stock centers
         </label>
       </div>
 
@@ -96,7 +94,7 @@ export function InventoryTable({ onGoToRequests }) {
         <EmptyState
           title={
             onlyOut
-              ? 'No center has finished items'
+              ? 'No center is out of stock'
               : search
                 ? 'No centers found. Try a different search.'
                 : 'No open distribution centers'
@@ -105,84 +103,69 @@ export function InventoryTable({ onGoToRequests }) {
         />
       ) : (
         <>
-          <TableShell minWidth={900}>
+          <TableShell minWidth={640}>
             <thead className={theadClass}>
               <tr>
                 <Th className="pl-5">Distribution center</Th>
-                {CATEGORIES.map((c) => (
-                  <Th key={c.key} className="text-center">
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="size-2 rounded-full" style={{ background: c.color }} aria-hidden />
-                      {c.label}
-                    </span>
-                  </Th>
-                ))}
+                <Th>Stock</Th>
+                <Th>Collection point</Th>
                 <Th className="pr-5">Last updated</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {rows.map(({ center, items, latest }) => (
-                <tr key={center.id}>
-                  <td className="py-3 pr-3 pl-5">
-                    <p className="font-semibold">{center.name}</p>
-                    {center.short_code && <p className="text-xs text-muted">{center.short_code}</p>}
-                  </td>
-                  {CATEGORIES.map((c) => {
-                    const item = items.get(c.key)
-                    const handler = item?.is_out_of_stock ? assignedTo(center.id, c.key) : undefined
-                    return (
-                      <td key={c.key} className="px-2 py-3 text-center align-middle">
-                        {!item ? (
-                          <span className="text-xs text-muted" title="The center has not updated this item yet">
-                            —
-                          </span>
-                        ) : item.is_out_of_stock ? (
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-bold text-red-800 ring-1 ring-red-200">
-                              Finished
-                            </span>
-                            {handler ? (
-                              <span
-                                className="max-w-32 truncate text-[11px] text-sky-800"
-                                title={`Assigned to ${handler}`}
-                              >
-                                → {handler}
-                              </span>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={onGoToRequests}
-                                className="text-[11px] font-semibold text-red-800 underline"
-                              >
-                                Not assigned yet
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200">
-                            Available
-                          </span>
-                        )}
-                      </td>
-                    )
-                  })}
-                  <td className="py-3 pr-5 pl-3 text-xs text-muted">
-                    {latest ? (
-                      <>
-                        <p className="whitespace-nowrap">{formatRelative(latest.updated_at)}</p>
-                        {latest.updated_by && <p className="truncate">by {latest.updated_by.full_name}</p>}
-                      </>
-                    ) : (
-                      'No update yet'
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {rows.map(({ center, latest, isOut, hasUpdate }) => {
+                const handler = isOut ? assignedTo(center.id) : undefined
+                return (
+                  <tr key={center.id}>
+                    <td className="py-3 pr-3 pl-5">
+                      <p className="font-semibold">{center.name}</p>
+                      {center.short_code && <p className="text-xs text-muted">{center.short_code}</p>}
+                    </td>
+                    <td className="px-3 py-3">
+                      {isOut ? (
+                        <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-bold whitespace-nowrap text-red-800 ring-1 ring-red-200">
+                          Out of stock
+                        </span>
+                      ) : hasUpdate ? (
+                        <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200">
+                          Available
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted">No update</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-sm">
+                      {!isOut ? (
+                        <span className="text-muted">—</span>
+                      ) : handler ? (
+                        <span className="text-sky-800">→ {handler}</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={onGoToRequests}
+                          className="text-xs font-semibold text-red-800 underline"
+                        >
+                          Not assigned yet
+                        </button>
+                      )}
+                    </td>
+                    <td className="py-3 pr-5 pl-3 text-xs text-muted">
+                      {latest ? (
+                        <>
+                          <p className="whitespace-nowrap">{formatRelative(latest.updated_at)}</p>
+                          {latest.updated_by && <p className="truncate">by {latest.updated_by.full_name}</p>}
+                        </>
+                      ) : (
+                        'No update yet'
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </TableShell>
           <p className={cn('border-t border-line px-5 py-3 text-xs text-muted')}>
-            {rows.length} center{rows.length === 1 ? '' : 's'} · {totalOut} item{totalOut === 1 ? '' : 's'} finished in
-            total · “—” means the center has not updated that item yet.
+            {rows.length} center{rows.length === 1 ? '' : 's'} · {totalOut} out of stock.
           </p>
         </>
       )}

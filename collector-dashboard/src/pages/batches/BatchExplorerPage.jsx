@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router'
 import { X } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
-import { Input, SearchInput, Select } from '../../components/ui/Form'
+import { DateRangeInput, SearchInput, Select } from '../../components/ui/Form'
 import { EmptyState, ErrorState, Skeleton } from '../../components/ui/States'
 import { Pagination } from '../../components/ui/Table'
 import { ShipmentTable } from '../../components/domain/ShipmentTable'
@@ -119,26 +119,15 @@ export function BatchExplorerPage() {
             <option value="dispatched">On the way</option>
             <option value="received">Received</option>
           </Select>
-          <label className="block">
-            <span className="sr-only">Sent from date</span>
-            <Input
-              type="date"
-              value={filters.from ?? ''}
-              onChange={(e) => update({ from: e.target.value || null })}
-              title="Sent from date"
-              aria-invalid={!!dateError}
-            />
-          </label>
-          <label className="block">
-            <span className="sr-only">Sent to date</span>
-            <Input
-              type="date"
-              value={filters.to ?? ''}
-              onChange={(e) => update({ to: e.target.value || null })}
-              title="Sent to date"
-              aria-invalid={!!dateError}
-            />
-          </label>
+          <DateRangeInput
+            label="Sent date"
+            from={filters.from ?? ''}
+            to={filters.to ?? ''}
+            onFromChange={(v) => update({ from: v || null })}
+            onToChange={(v) => update({ to: v || null })}
+            invalid={!!dateError}
+            className="sm:col-span-2"
+          />
         </div>
         {(hasFilters || dateError) && (
           <div className="flex items-center gap-3 px-4 pb-3 text-xs">

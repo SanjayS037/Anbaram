@@ -3,7 +3,6 @@ import { X } from 'lucide-react'
 import { Card, CardBody, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
-import { CategoryChip } from '../../components/domain/CategoryChip'
 import { RequestStatusBadge } from '../../components/domain/StatusBadges'
 import { useCancelRequest } from '../../hooks/useRequests'
 import { formatDate, formatRelative } from '../../utils/format'
@@ -18,7 +17,7 @@ export function OpenRequestsCard({ point }) {
     <Card className="border-amber-200">
       <CardHeader
         title="Requests given to this point"
-        subtitle="This point has been asked to send items to a distribution center that ran out"
+        subtitle="This point has been asked to send items to a distribution center that is out of stock"
       />
       <CardBody>
         <ul className="divide-y divide-line">
@@ -35,11 +34,7 @@ export function OpenRequestsCard({ point }) {
                     {r.started_at && ` · started ${formatRelative(r.started_at)}`}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-1">
-                  {(r.requested_categories ?? []).map((c) => (
-                    <CategoryChip key={c} category={c} />
-                  ))}
-                </div>
+                <p className="text-xs text-muted">Collect all items</p>
                 {r.note && <p className="text-sm text-muted">{r.note}</p>}
               </div>
               <Button
