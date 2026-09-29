@@ -1,21 +1,37 @@
 import { cn } from '../../utils/cn'
 import { appConfig } from '../../lib/config'
 
+// The PNG is square artwork that reaches its edges, so it is padded inside the
+// white circle — otherwise the round crop cuts off the corners (the bottom text).
+const LOGO_SIZES = {
+  sm: { box: 'size-11 p-[3px]', px: 44 },
+  lg: { box: 'size-36 p-2.5', px: 144 },
+}
+
 /**
- * Official Anbaram logo (public/anbaram_logo.svg — a round badge with its own
- * white background). Pass `alt` when the logo stands alone; next to the
- * "Anbaram" wordmark it is decorative, so alt stays empty.
+ * Official Anbaram logo (public/Anbaram official logo.png) inside a white
+ * circle. Pass `alt` when the logo stands alone; next to the "Anbaram"
+ * wordmark it is decorative, so alt stays empty.
  */
-export function BrandLogo({ className, alt = '' }) {
+export function BrandLogo({ className, alt = '', size = 'sm' }) {
+  const { box, px } = LOGO_SIZES[size]
   return (
-    <img
-      src="/anbaram_logo.svg"
-      alt={alt}
-      width={44}
-      height={44}
-      decoding="async"
-      className={cn('size-11 shrink-0 rounded-full bg-white shadow-xs ring-1 ring-black/5', className)}
-    />
+    <span
+      className={cn(
+        'grid shrink-0 place-items-center rounded-full bg-white shadow-xs ring-1 ring-black/5',
+        box,
+        className,
+      )}
+    >
+      <img
+        src="/Anbaram official logo.png"
+        alt={alt}
+        width={px}
+        height={px}
+        decoding="async"
+        className="size-full object-contain"
+      />
+    </span>
   )
 }
 

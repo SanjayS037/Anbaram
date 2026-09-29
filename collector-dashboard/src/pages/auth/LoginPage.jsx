@@ -48,7 +48,8 @@ export function LoginPage() {
         <div className="max-w-md">
           <BrandLogo
             alt="Anbaram — Chengalpattu District Administration"
-            className="mb-8 size-36 shadow-lg ring-4 ring-white/15"
+            size="lg"
+            className="mb-8 shadow-lg ring-4 ring-white/15"
           />
           <p className="text-xs font-semibold tracking-[0.18em] text-brand-200 uppercase">{appConfig.breadcrumb}</p>
           <h1 className="mt-3 font-serif text-4xl leading-tight font-bold">{appConfig.consoleTitle}</h1>
