@@ -70,6 +70,14 @@ export async function updateDistributionCenter(id, input) {
   unwrap(await supabase.from('distribution_centers').update(input).eq('id', id).select('id').single())
 }
 
+/**
+ * Delete a place for good (migration 004). The database refuses when the place
+ * has any shipment — those must be closed instead, so records are kept.
+ */
+export async function deleteLocation(type, id) {
+  unwrap(await supabase.rpc('delete_location', { p_location_type: type, p_location_id: id }))
+}
+
 // ---------------------------------------------------------------------------
 // Totals (existing reporting views) and assignable officers
 // ---------------------------------------------------------------------------

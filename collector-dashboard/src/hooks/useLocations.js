@@ -47,6 +47,7 @@ function useInvalidateLocations() {
       ['location-options'],
       ['overview'],
       ['nav-counts'],
+      ['requests'],
     ]) {
       void queryClient.invalidateQueries({ queryKey: key })
     }
@@ -92,6 +93,18 @@ export function useSetLocationStatus() {
         : locations.updateDistributionCenter(id, { status: active ? 'active' : 'inactive' }),
     onSuccess: (_d, { active, name }) => {
       toast.success(`${name} is now ${active ? 'open' : 'closed'}.`)
+      invalidate()
+    },
+    onError: (error) => toast.error(error.message),
+  })
+}
+
+export function useDeleteLocation() {
+  const invalidate = useInvalidateLocations()
+  return useMutation({
+    mutationFn: ({ type, id }) => locations.deleteLocation(type, id),
+    onSuccess: (_d, { name }) => {
+      toast.success(`${name} deleted.`)
       invalidate()
     },
     onError: (error) => toast.error(error.message),

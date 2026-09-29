@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Archive, PackageCheck, Pencil, Power, Truck } from 'lucide-react'
+import { Archive, PackageCheck, Pencil, Power, Trash2, Truck } from 'lucide-react'
 import { Drawer } from '../../components/ui/Drawer'
 import { Card, CardBody, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
@@ -8,6 +8,7 @@ import { Detail, DetailList } from '../../components/ui/DetailList'
 import { ErrorState, Skeleton } from '../../components/ui/States'
 import { LocationStatusBadge } from '../../components/domain/StatusBadges'
 import { LocationFormDialog } from '../../components/domain/LocationFormDialog'
+import { DeleteLocationDialog } from '../../components/domain/DeleteLocationDialog'
 import { OfficerAssignmentCard } from '../../components/domain/OfficerAssignmentCard'
 import { ShipmentHistoryCard } from '../../components/domain/ShipmentHistoryCard'
 import { LocationPhotoCard } from '../../components/domain/LocationPhotoCard'
@@ -71,6 +72,9 @@ export function DistributionCenterPanel({ centerId, onClose }) {
             className={active ? 'text-red-800' : undefined}
           >
             <Power className="size-4" aria-hidden /> {active ? 'Mark as closed' : 'Mark as open'}
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => setDialog('delete')} className="text-red-800">
+            <Trash2 className="size-4" aria-hidden /> Delete
           </Button>
         </>
       }
@@ -156,6 +160,16 @@ export function DistributionCenterPanel({ centerId, onClose }) {
           'Collection point officers will be able to send items here again.'
         )}
       </ConfirmDialog>
+      {dialog === 'delete' && (
+        <DeleteLocationDialog
+          open
+          type="distribution_center"
+          location={c}
+          shipmentCount={totals.data?.total_shipments ?? 0}
+          onClose={() => setDialog(null)}
+          onDeleted={onClose}
+        />
+      )}
     </Drawer>
   )
 }
