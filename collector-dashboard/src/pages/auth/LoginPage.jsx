@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useLocation } from 'react-router'
+import { Link, Navigate, useLocation } from 'react-router'
 import { ShieldCheck } from 'lucide-react'
 import { useAuth } from '../../hooks/authContext'
 import { Button } from '../../components/ui/Button'
@@ -118,6 +118,9 @@ export function LoginPage() {
             <ShieldCheck className="size-4 text-brand-600" aria-hidden />
             Only Collector Office staff can sign in here.
           </p>
+          <Link to="/privacy-policy" className="mt-3 inline-block text-xs text-brand-700 underline">
+            Privacy Policy
+          </Link>
         </div>
       </main>
     </div>
