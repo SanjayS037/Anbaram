@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { DashboardLayout } from '../layouts/DashboardLayout'
 import { LoginPage } from '../pages/auth/LoginPage'
 import { PrivacyPolicyPage } from '../pages/legal/PrivacyPolicyPage'
+import { DeleteAccountPage } from '../pages/legal/DeleteAccountPage'
 import { OverviewPage } from '../pages/overview/OverviewPage'
 import { ReportsPage } from '../pages/reports/ReportsPage'
 import { OfficersPage } from '../pages/officers/OfficersPage'
@@ -18,8 +19,9 @@ const handle = (title) => ({ title })
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
-  // Public, no login needed: the privacy policy link given to Google Play.
+  // Public, no login needed: the links given to Google Play.
   { path: '/privacy-policy', element: <PrivacyPolicyPage /> },
+  { path: '/delete-account', element: <DeleteAccountPage /> },
   {
     path: '/',
     element: (

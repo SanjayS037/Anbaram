@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router'
 import { GovtMark } from '../../components/domain/BrandMark'
+import { CONTACT_ADDRESS, CONTACT_EMAIL } from './contact'
 
 /**
  * Public privacy policy (no login needed) — the link given to Google Play
@@ -8,8 +9,6 @@ import { GovtMark } from '../../components/domain/BrandMark'
  * To update: edit the text below and change LAST_UPDATED.
  */
 const LAST_UPDATED = '14 October 2026'
-const CONTACT_EMAIL = '[insert official contact email]'
-const CONTACT_ADDRESS = '[insert Collectorate office address]'
 
 function Section({ number, title, children }) {
   return (
@@ -188,6 +187,13 @@ export function PrivacyPolicyPage() {
               'Request deactivation of your account',
             ]}
           />
+          <p>
+            You can also delete your account yourself on the{' '}
+            <Link to="/delete-account" className="font-medium text-brand-700 underline">
+              Delete Account page
+            </Link>
+            .
+          </p>
         </Section>
 
         <Section number={8} title="Children's Privacy">
@@ -227,6 +233,12 @@ export function PrivacyPolicyPage() {
 
         <footer className="mt-12 border-t border-line pt-5 text-sm text-muted">
           Anbaram — An initiative of the Chengalpattu District Administration, Government of Tamil Nadu.
+          <span className="mx-2" aria-hidden>
+            ·
+          </span>
+          <Link to="/delete-account" className="text-brand-700 underline">
+            Delete account
+          </Link>
           <span className="mx-2" aria-hidden>
             ·
           </span>
